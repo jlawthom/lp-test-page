@@ -1,0 +1,621 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <style>
+    /* .lp_survey_header_area{
+        border-bottom: none !important;
+      } */
+  </style>
+  <!-- BEGIN LivePerson Monitor. -->
+  <script type="text/javascript">
+    window.lpTag = window.lpTag || {};
+    window.lpTag.autoStart = false;
+    'undefined' == typeof window.lpTag._tagCount ? (window.lpTag = { wl: lpTag.wl || null, scp: lpTag.scp || null, site: '26206640' || '', section: lpTag.section || '', tagletSection: lpTag.tagletSection || null, autoStart: lpTag.autoStart !== !1, ovr: lpTag.ovr || {}, _v: '1.10.0', _tagCount: 1, protocol: 'https:', events: { bind: function (t, e, i) { lpTag.defer(function () { lpTag.events.bind(t, e, i) }, 0) }, trigger: function (t, e, i) { lpTag.defer(function () { lpTag.events.trigger(t, e, i) }, 1) } }, defer: function (t, e) { 0 === e ? (this._defB = this._defB || [], this._defB.push(t)) : 1 === e ? (this._defT = this._defT || [], this._defT.push(t)) : (this._defL = this._defL || [], this._defL.push(t)) }, load: function (t, e, i) { var n = this; setTimeout(function () { n._load(t, e, i) }, 0) }, _load: function (t, e, i) { var n = t; t || (n = this.protocol + '//' + (this.ovr && this.ovr.domain ? this.ovr.domain : 'lptag.liveperson.net') + '/tag/tag.js?site=' + this.site); var o = document.createElement('script'); o.setAttribute('charset', e ? e : 'UTF-8'), i && o.setAttribute('id', i), o.setAttribute('src', n), document.getElementsByTagName('head').item(0).appendChild(o) }, init: function () { this._timing = this._timing || {}, this._timing.start = (new Date).getTime(); var t = this; window.attachEvent ? window.attachEvent('onload', function () { t._domReady('domReady') }) : (window.addEventListener('DOMContentLoaded', function () { t._domReady('contReady') }, !1), window.addEventListener('load', function () { t._domReady('domReady') }, !1)), 'undefined' === typeof window._lptStop && this.load() }, start: function () { this.autoStart = !0 }, _domReady: function (t) { this.isDom || (this.isDom = !0, this.events.trigger('LPT', 'DOM_READY', { t: t })), this._timing[t] = (new Date).getTime() }, vars: lpTag.vars || [], dbs: lpTag.dbs || [], ctn: lpTag.ctn || [], sdes: lpTag.sdes || [], hooks: lpTag.hooks || [], identities: lpTag.identities || [], ev: lpTag.ev || [] }, lpTag.init()) : window.lpTag._tagCount += 1;
+
+    lpTag.section = ["before-lp-tag-start"];
+
+    window.lpTag.start();
+  </script>
+
+  <!-- END LivePerson Monitor. -->
+
+  <script>
+    var request = new XMLHttpRequest()
+    var conversationId;
+
+    // Push SDEs on page load
+    window.lpTag = window.lpTag || {};
+    lpTag.sdes = lpTag.sdes || [];
+    lpTag.sdes.push(
+      {
+        "type": "personal",
+        "personal": {
+          "firstname": "Unauthenticated",
+          "lastname": "Name"
+        }
+      }
+    );
+
+    // lpTag.sdes.push(
+    //   {
+    //     "type": "prodView", //MANDATORY
+    //     "products": [{ //ARRAY OF PRODUCTS
+    //       "product": {
+    //         "name": "Women's Running Shoes", //PRODUCT NAME
+    //         "category": "shoes", //PRODUCT CATEGORY NAME
+    //         "sku": "10305020", //PRODUCT SKU OR UNIQUE IDENTIFIER
+    //         "price": 119.95 //PRODUCT PRICE
+    //       }
+    //     }]
+    //   }
+    // );
+    // var data = {
+    //   "type": "prodView", //MANDATORY
+    //   "products": [{ //ARRAY OF PRODUCTS
+    //     "product": {
+    //       "name": "Women's Running Shoes", //PRODUCT NAME
+    //       "category": "shoes", //PRODUCT CATEGORY NAME
+    //       "sku": "10305020", //PRODUCT SKU OR UNIQUE IDENTIFIER
+    //       "price": 119.95 //PRODUCT PRICE
+    //     }
+    //   }]
+    // };
+    // var fun = function () { };""
+    // lpTag.sdes.send(data, fun);
+
+    function getCookie(cname) {
+      let name = cname + "=";
+      let decodedCookie = decodeURIComponent(document.cookie);
+      let ca = decodedCookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+          return c.substring(name.length, c.length);
+        }
+      }
+      return "";
+    }
+
+    // Bind to Offer Click
+    lpTag.events.bind("lp_SMT", "MONITORING_STATE", invokeFaaS);
+    // Send SDEs on event
+    function invokeFaaS(data, eventInfo) {
+      // lpTag.sdes.push(
+      //   {
+      //     type: "prodView", //MANDATORY
+      //     products: {
+      //       "product": {
+      //         "name": `clicked_${data.engagementId}`,
+      //       }
+      //     }
+      //   }
+      // );
+
+      // lpTag.sdes.send();
+
+      console.log(`MONITORING_STATE-- data: ${JSON.stringify(data)}`);
+    }
+
+    checkUnauthenticatedAlertMessage();
+
+    async function checkUnauthenticatedAlertMessage() {
+      var alert = setInterval(checkAlert, 250);
+      var index = 0;
+      function checkAlert() {
+        index++;
+        if (index > 20) {
+          clearInterval(alert)
+        }
+        var element = document.getElementById('lp_alert_message');
+        if (typeof (element) != 'undefined' && element != null) {
+          element.innerHTML = "Go back to the previous page or log in and refresh to continue your conversation.";
+          clearInterval(alert);
+        }
+      }
+    }
+
+    let hiddenEngagementId1;
+    let hiddenEngagementId2;
+
+    // Bind to Offer Impression
+    lpTag.events.bind("LP_OFFERS", "OFFER_IMPRESSION", onOfferImpression);
+
+    // On Offer Impression
+    function onOfferImpression(data, eventInfo) {
+      if (data && data.engagementId && data.engagementName && data.engagementName.includes("Hidden Embedded HTML 1")) {
+        console.log("OFFER IMPRESSION: " + data.engagementName);
+        hiddenEngagementId1 = data.engagementId
+      }
+
+      if (data && data.engagementId && data.engagementName && data.engagementName.includes("Hidden Embedded HTML 2")) {
+        console.log("OFFER IMPRESSION: " + data.engagementName);
+        hiddenEngagementId2 = data.engagementId
+      }
+    }
+    function clickHiddenEngagement1() {
+      if (lpTag && lpTag.taglets && lpTag.taglets.rendererStub) {
+        var clicked = lpTag.taglets.rendererStub.click(hiddenEngagementId1);
+      }
+    }
+    function clickHiddenEngagement2() {
+      if (lpTag && lpTag.taglets && lpTag.taglets.rendererStub) {
+        var clicked = lpTag.taglets.rendererStub.click(hiddenEngagementId2);
+      }
+    }
+
+    // Bind to Offer Click
+    lpTag.events.bind("LP_OFFERS", "OFFER_CLICK", sendSDE);
+
+    // Send SDEs on event
+    function sendSDE(data, eventInfo) {
+      console.log("ONCLICK")
+      console.log(data);
+      console.log(eventInfo);
+      lpTag.sdes.push(
+        {
+          type: "prodView", //MANDATORY
+          products: {
+            "product": {
+              "name": `clicked_${data.engagementId}`,
+            }
+          }
+        }
+      );
+
+      lpTag.sdes.send();
+    }
+
+    //Reset Cart on button
+    function resetCart(data, eventInfo) {
+      lpTag.sdes.push(
+        {
+          "type": "cart",
+          "total": 0,
+          "numItems": 0,
+        },
+        // {
+        //   "type": "ctmrinfo", //MANDATORY
+        //   "info": {
+        //     "customerId": "SDE_Customer_ID"
+        //   }
+        // }
+      );
+
+      lpTag.sdes.send();
+    }
+
+    function engagementTrigger() {
+      lpTag.taglets.rendererStub.click(1531806150);
+    }
+
+    function getToken2() {
+      return "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJscF9zZGVzIjpbeyJ0eXBlIjoiY3RtcmluZm8iLCJpbmZvIjp7ImNzdGF0dXMiOiJjYW5jZWxsZWQiLCJjdHlwZSI6IkFCQzE0OTgiLCJjb21wYW55QnJhbmNoIjoiQSIsImN1c3RvbWVySWQiOiIxMzg3NjZBQyJ9fV0sInN1YiI6IjU1NS02NjYtOTk5Iiwid3N1ayI6IjQzNzE5ODgzOTI4ODk2OTMxOTYiLCJpc3MiOiJodHRwczovL2lkcC5saXZlcGVyc29uLm5ldCIsImZ1bGxOYW1lIjoiUGF0cmljayBTdGVnZXIiLCJpc0FkbWluIjp0cnVlLCJpc0xQQSI6ZmFsc2UsInNjb3BlIjoiMTUzNiAxNTM3IDE1MzggMyAxNTM5IDE1NDAgNSAxNTQxIDYgMTU0MiA3IDE1NDMgMTU0NCA5IDE1NDUgMTAgMTU0NiAxNTQ3IDE1NDggMTMgMTU0OSAxNTUyIDE1NTMgMTU1NCAxNTU1IDE1NTYgMTU1NyAxNTU4IDE1NTkgMTU2MCAxNTYxIDE1NjIgMTU2MyAxNTY0IDE1NjUgMTU2NiAxNTY3IDE5OTk5IDE1NjggMTU2OSAxNTcwIDE1NzIgMTU3MyAxNTc0IDE1NzUgNDAgNTUgNTYgMTA4MCA1NyAxMDgxIDYyIDYzIDY0IDY4IDY5IDcwIDExMDEgMTEwMiA3OSAxMTAzIDgwIDExMDUgMTEwNiAxMTExIDExMTIgMTExOCAxNzAwIDE3MDEgMTcwMiAxNzAzIDE3MDQgMTcwNSAxNzA2IDE3MDcgMTcwOCAxNzA5IDE3MTAgMTcxMyAxNzE3IDE3MTggMTcxOSAxNzIzIDE3MjQgMTcyNSAxNzI3IDE3MjkgMTczMCAxNzMxIDE3MzQgMTczNSAxNzM2IDE3MzcgMTczOCAxNzM5IDE3NDAgMTc0MSAxNzQyIDE3NDMgMTc0NCAxNzQ2IDE3NDcgMTc0OCAxNzUxIDE3NTIgMTc1MyAxNzU0IDE3NTUgMTc2MyAxNzY0IDE3NjYgMTc2NyAxNzcwIDE3NzIgMTc3MyAxNzc0IDE3NzUgMTc3NiAxNzc4IDE3NzkgMTc4MCAxNzgxIDE3ODIgMTc5MCAxNzkxIDE3OTMgMTc5NCAxNzk1IDE3OTYgMTc5NyAxNzk4IDE3OTkgMTgwMCAxODAxIDE4MDIgMTgwNCAxODA1IDE4MDYgMTgwNyAxODA4IDE4MDkgMTgxMCAxODExIDE4MTIgMTgxMyAxODE0IDE4MTUgMTgxNiAxODE3IDE4MTggMTgxOSAxODIwIDE4MjEgMTgyMiAxODIzIDE4MjQgMTgyNSAxODI2IDE4MjcgMTgyOCAxODI5IDE4MzAgMTgzMSAxODMyIDE4MzMgMTgzNCAxODM1IDE4MzYgMTgzNyAxODM4IDE4MzkgMTg0MCAxODQxIDE4NDIgMTg0MyAxODQ0IDE4NDUgMTg0NiAxODQ3IDE4NTUgMTg1NiAxODU3IDE4NTggMTg1OSAxNTAwIDE1MDEgMTUwMiAxNTAzIDE1MDQgMTUwNSAxNTA2IDE1MDcgMTUwOCAxNTEyIDE1MTMgMTUxNSAxNTE2IDE1MTcgMTUxOCAxNTE5IDE1MjAgMTUyMSAxNTIyIDE1MjMgMTUyNCAxNTI1IDE1MjYgMTUyNyAxNTI4IDE1MjkgMTAxOCAxNTMwIDE1MzEgMTUzMiAxNTMzIDE1MzUiLCJlbWFpbCI6IlBhdHJpY2suU3RlZ2VyQHJicy1zZXJ2aWNlcy5jb20iLCJqdGkiOiJiYjJkMjk3OC05YmNhLTQ4MzItYmYxZC00ZTFiN2Q5NDg0ZjAiLCJhY3IiOiJsb2ExIiwiZXhwIjoxNjM0OTcxOTMwLCJpYXQiOjE1NzI1MjEyNjF9.J8mkYkLiK1RBueMjpHtxuJaxmYrQQwXtR5z0JrWQsrZpTVusaq2SDeVxWnvqJgYssEbyDChsK2yJF-HOynVdWpaUrD2WvLqI-2uxHlny76wkfu8ZqvW91pLpFUQ0Jd7VbzZ8edQkc_vkFkn5XRtv4bZSVKU-vraA6vxvSFwB8JHH3kZAPvQZr9QB85D2YHjnQskjo8FFsIjZ9WBGg0CUMK8nH1BeDft8-DdYae0WIvgURs3yrYN_sjWUn0NN2WUCFYAH6PgRFL96-sYJgtjawIFWrF1ZwChsKLFPmp_Z9aaxQq5SKJ_nUQQkeDnzK1GY6tNmKggTZmbiXM0_rHZlsA";
+    }
+
+    function getToken() {
+      return "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJscF9zZGVzIjpbeyJ0eXBlIjoiY3RtcmluZm8iLCJpbmZvIjp7ImNzdGF0dXMiOiJjYW5jZWxsZWQiLCJjdHlwZSI6IkFCQzE0OTgiLCJjb21wYW55QnJhbmNoIjoiQSIsImN1c3RvbWVySWQiOiIxMzg3NjZBQyJ9fSx7InR5cGUiOiJwZXJzb25hbCIsInBlcnNvbmFsIjp7ImZpcnN0bmFtZSI6IkF1dGhlbnRpY2F0ZWQiLCJsYXN0bmFtZSI6Ik5hbWUifX1dLCJzdWIiOiJqYWNrIiwiaXNzIjoiaHR0cHM6Ly9pZHAubGl2ZXBlcnNvbi5uZXQiLCJhY3IiOiJsb2ExIiwiZXhwIjoxNjM0OTcxOTMwLCJpYXQiOjE1NzI1MjEyNjF9.ScNPXpY8z88K8t-obY0V6GlciC48QroHo4uWIDmKf_hXp6tpyZ-5YTvc3CNw79Vt2CdXfNpccG6roup26SzsJsJpteI3lay5qYfW6k69oMhazAW3WHj7xHpIjyQc0QEuS_epZhc9-oJ5o5EcQJxJb8japUBZZDorREpB-gQiJtVfs0BVkLyWKqvcq3q9iNT3qf1jRZCgfTt8odYTDXrHSa6LCgdMeQR8UBJTf4ieTRTqU6M-fiJzmjpv3MzyKsUHhBJR_Zkm318wySHRVoXO10ossMl9XySjzjIjIiFqAml231UXMnyDfyqdz0OyL02eP1SWHQF_Ig4tNva_NWtO6g"
+      // return "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJscF9zZGVzIjpbeyJ0eXBlIjoiY3RtcmluZm8iLCJpbmZvIjp7ImNzdGF0dXMiOiJjYW5jZWxsZWQiLCJjdHlwZSI6IkFCQzE0OTgiLCJjb21wYW55QnJhbmNoIjoiQSIsImN1c3RvbWVySWQiOiIxMzg3NjZBQyJ9fV0sInN1YiI6Iis5NzItMy01NTU1LTU1NiIsImlzcyI6Imh0dHBzOi8vaWRwLmxpdmVwZXJzb24ubmV0IiwiYWNyIjoibG9hMSIsImV4cCI6MTYzNDk3MTkzMCwiaWF0IjoxNTcyNTIxMjYxfQ.JoJj4XJKdCzgnP79ow9TOY8vxCJSiMxyoWlgQW8EmrMxjs_0tK3zhKO0Ob4Z-qy60hW_2UOrORC07ihLdgLaWuP4zUSmIYXZPP5McuBPyYGTFMfmh-a1AJfN5aqnGWyoJnffNrh-IsgW9eLiUgiTdy7vZRZaimBcxtGmA1Hn2MuKhy6GrUDFlwLhRr-dlVRk1K4N2oSU3hJKDPLYyyZKB07aS9xDR4kk6SpSj2c4xF71D848QbD2oKXPXWit8nwsd-MAdNwSIeRLBq3G1bG1XKT4lMO6TqXzkPb0but1nJaAUA-NGr9ZRguu-iFnFPalLoxpO6BnQsAYU55vtibAew";
+    }
+
+    async function pushIdentitiesFunction() {
+      // const t = "12345678";
+      // lpTag.identities({
+      //     sub: t,
+      //     iss: "https://idp.liveperson.net",
+      //     acr: "loa1"
+      //   });
+
+      function f(n) {
+        // When the lpTag / newPage() runs, this function is called and tells us whether the user is authenticated or not
+        console.log('@@@ f() has been called');
+
+        const t = "jack";
+
+        console.log(`Identified user is: ${t}`);
+
+        n({
+          sub: t,
+          iss: "https://idp.liveperson.net",
+          acr: "loa1"
+        });
+      }
+
+      this.window.lpTag.identities = this.window.lpTag.identities || [];
+      this.window.lpTag.identities.push(f);
+    }
+
+    function validateToken() {
+      document.cookie = "authStatus=Auth";
+      const token = getToken();
+
+      this.window.lpMethods = {
+        lpGetJWT: function (callback) {
+          callback(token);
+        }
+      }
+    }
+
+    async function pushIdentitiesFunction2() {
+      function f2(n) {
+        // When the lpTag / newPage() runs, this function is called and tells us whether the user is authenticated or not
+        console.log('@@@ f2() has been called');
+
+        const t = "12345678";
+
+        console.log(`Identified user is: ${t}`);
+
+        n({
+          sub: t,
+          iss: "https://idp.liveperson.net",
+          acr: "loa1"
+        });
+      }
+
+      this.window.lpTag.identities = this.window.lpTag.identities || [];
+      this.window.lpTag.identities.push(f2);
+    }
+
+    function validateToken2() {
+      const token = getToken2();
+      this.window.lpGetJWT = function (callback) {
+        console.log('@@@ lpGetJWT() has been called - user2')
+        callback(token);
+      };
+    }
+
+    function callNewPage() {
+      checkUnauthenticatedAlertMessage();
+      console.log("Cookie: " + getCookie("authStatus"));
+      lpTag.section.push("*");
+      lpTag.newPage(window.location.href, { section: lpTag.section })
+      // location.reload();
+    }
+
+    function removeIdentitiesFunction() {
+      // console.log(this.window.lpTag.identities);
+      this.window.lpTag.identities.pop();
+    }
+
+    function invalidateToken() {
+      document.cookie = "authStatus=Unauth";
+      const token = "";
+      console.log(`@@@ Auth Token/JWT: ${token}`);
+      this.window.lpGetJWT = function (callback) {
+        console.log('@@@ lpGetJWT() has been called')
+        callback(token);
+      };
+    }
+
+    function getAuthStatus() {
+      console.log("Cookie: " + getCookie("authStatus"));
+    }
+
+    async function authenticateSPA() {
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      pushIdentitiesFunction();
+      validateToken();
+      if (lpTag && lpTag.newPage) {
+        lpTag.newPage(window.location.href, { section: lpTag.section })
+      }
+    }
+
+    function openAuthIframe() {
+      const div = document.getElementById("auth-iframe");
+      console.log(`@@@ Auth iFrame opened`);
+      div.innerHTML = '<iframe height="500px" src="/Auth.html"></iframe>';
+    }
+
+    function closeAuthIframe() {
+      const div = document.getElementById("auth-iframe");
+      console.log(`@@@ Auth iFrame closed`);
+      div.innerHTML = '';
+    }
+
+    lpTag.events.bind("LPT", "DOM_READY", domReady());
+    function domReady() {
+      console.log("DOM READY");
+    }
+
+    lpTag.events.bind("LPTAG", "ON_STARTED", tagletInit());
+    function tagletInit() {
+      console.log("LP Tag ON_STARTED");
+    }
+
+    lpTag.events.bind("lp_SMT", "MONITORING_STATE", monitoringState());
+    function monitoringState() {
+      console.log("MONITORING_STATE");
+      if (getCookie("authStatus") === "Auth") {
+
+        console.log("this is auth")
+        console.log("Cookie: " + getCookie("authStatus"));
+        authenticateSPA()
+      }
+    }
+
+    //Send SDEs using .newPage
+    function btnSendSDE() {
+      lpTag.newPage(
+        "http://localhost:8080/",
+        {
+          sdes: [{
+            "type": "cart",
+            "total": 11.7,
+            "numItems": 6,
+            "products": [
+              {
+                "product": {
+                  "name": "prod1",
+                  "category": "category",
+                  "sku": "sku",
+                  "price": 7.8
+                },
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "type": "mrktInfo",  //MANDATORY
+            "info": {
+              "campaignId": "abc"  //EXTERNAL ORIGINATING CAMPAIGN 
+            }
+          },
+          {
+            "type": "ctmrinfo",
+            "info": {
+              "cstatus": "Unverified",
+            }
+          }
+
+          ]
+        }
+
+      )
+      // let accountId = '26206640';
+      // request.open('POST', `https://lo.msghist.liveperson.net/messaging_history/api/account/${accountId}/conversations/conversation/search`,)
+    }
+
+    //Bind to LP events + Review data
+    function bindLP(data, eventInfo) {
+      console.log("--conversationInfo Event--");
+      console.log(data.monitoringSessionId);
+      monitoringSessionId = data.monitoringSessionId;
+      console.log(eventInfo);
+      console.log(data);
+    }
+
+    lpTag.events.bind("lpUnifiedWindow", "conversationInfo", bindLP);
+
+    // Custom Engagement - Engagement Trigger API
+    function onCustomEngagementClick() {
+
+      if (lpTag && lpTag.taglets && lpTag.taglets.rendererStub) {
+        var clicked = lpTag.taglets.rendererStub.click(1617238950);
+        console.log(`In custom engagement was Clicked? : ${clicked}`);
+      }
+    }
+
+    function stepUp() {
+      window.location.href = "/Auth.html";
+    }
+
+    async function sha256(message) {
+      // encode as UTF-8
+      const msgBuffer = new TextEncoder().encode(message);
+
+      // hash the message
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+
+      // convert ArrayBuffer to Array
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+      // convert bytes to hex string                  
+      const hashHex = hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
+      return hashHex;
+    }
+
+    async function handleWebViewForm(event) {
+      const botId = event.target.elements.botId.value;
+      const conversationId = event.target.elements.convId.value;
+      const userId = event.target.elements.userId.value;
+      const message = event.target.elements.message.value;
+
+      const url = 'https://lo.bc-intg.liveperson.net/thirdparty-services-0.1/webview';
+
+      // encode auth string
+      const authString = `${conversationId} || ${botId}`;
+      const auth = await sha256(authString);
+      // const auth = '1130b430b9b1daa3337187d4b42bb0ccd9813888aa84b84804f3263adc5aedd5';
+      console.log(auth);
+
+      const data = {
+        botId,
+        conversationId,
+        userId,
+        message,
+        contextVariables: [
+          { "name": "name", "value": 'JL' },
+        ],
+      };
+
+      let response = await fetch(url, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Authorization': auth,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      response = await response.json();
+
+      console.log(response);
+
+      return false;
+
+    }
+
+    /**
+    * Requests a CoBrowse session using an agent's service id. This can be used in phone-only scenarios when
+    * CoBrowse cannot be started via chat.
+    *
+    * Example Usage: requestCobrowse("123456");
+    * @param serviceId
+    */
+    function requestCobrowse(serviceId) {
+      lpTag.taglets.cobrowse.loadApi(function (visitorApi) {
+
+        console.log("CoBrowse visitor API loaded");
+        visitorApi.once("sessionRejected", function () {
+          alert("The service number is invalid.");
+        });
+
+        visitorApi.once("sessionOffered", function (event) {
+          console.log("Agent answered the request and offers a CoBrowse session");
+          var automaticallyAcceptOffer = false; // Set to false if you would like to ask the visitor to confirm the session start.
+
+          if (automaticallyAcceptOffer || confirm("Would you like to start a CoBrowse session with '" + event.agentAlias + "'?")) {
+            visitorApi.acceptSupportOffer(event);
+          } else {
+            visitorApi.cancelSupportOffer(event);
+          }
+        });
+
+
+        function sessionReadyCallback(startEvent) {
+          if (startEvent) {
+            console.log("Session is ready and will be started shortly.");
+          }
+        }
+
+        visitorApi.requestSupport({ serviceId: serviceId }, sessionReadyCallback);
+      });
+    }
+
+    /**
+    * Example: Display a simple dialog for entering the service number. In non proof-of-concept
+    * deployments the prompt should be replaced with a dialog that reflects the CI of the brand.
+    */
+
+    function enterServiceNumber() {
+      var serviceId = prompt("Please enter the CoBrowse service number in the field below.");
+      if (serviceId) {
+        requestCobrowse(serviceId);
+      }
+    }
+
+
+
+    // this.window.lpGetJWT = function (callback) {
+    //   // var token=$('textarea#token').val();
+    //   console.log('@@@ Invalid lpGetJWT() has been called')
+    //   callback("");
+    // };
+
+    function TT_General() {
+      lpTag.newPage(window.location.href, { section: ["TT-General"] })
+    }
+
+
+
+
+
+
+  </script>
+
+  <meta charset="utf-8">
+
+  <title>My Nginx</title>
+  <meta name="description" content="The HTML5 Herald">
+  <meta name="author" content="SitePoint">
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0,minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/> -->
+
+</head>
+
+<body style="background:rgb(19, 129, 167);">
+  <div id="checkoutContainer"></div>
+
+  <!-- WhatsApp Button -->
+  <a href="https://api.whatsapp.com/send?phone=447411127470"><img
+      src="https://seeklogo.com/images/W/whatsapp-lollipop-logo-B1DF222734-seeklogo.com.png" height="60" width="60">
+  </a>
+
+  <h1>Test Page</h1>
+  <h2>Cart Total:</h2>
+  <h2 id="cartTotal">£120.32</h2>
+
+  <button onclick="onCustomEngagementClick()">Custom Engagement</button>
+  <button onClick="btnSendSDE()">Send SDE</button>
+  <button onClick="stepUp()">Step Up</button>
+  <button onclick="enterServiceNumber()">Request Native Cobrowse</button>
+  <button onClick="resetCart()">Reset Cart</button>
+  <button onClick="engagementTrigger()">Engagement Trigger</button>
+
+
+  <div>
+    <p style="display: inline-block;">Start Typing to show engagement:</p>
+    <input type="text" oninput="sendSDE()">
+  </div>
+
+  <!-- Web View API Form -->
+  <h4>Web View API</h4>
+  <form onsubmit="handleWebViewForm(event); return false;">
+    Bot ID: <input id="botId" type="text">
+    Coversation ID: <input id="convId" type="text">
+    User ID: <input id="userId" type="text">
+    Message: <input id="message" type="text">
+    <input type="submit" value="Send">
+  </form>
+
+  <div style="margin-top: 50px;">
+    <h4>Login / Logout Flow SPA User 1</h4>
+    <button onClick="pushIdentitiesFunction()">Push Identities Function</button>
+    <button onclick="validateToken()">Validate Token</button>
+    <button onClick="callNewPage()">Call .newPage()</button>
+    <a href="./Auth.html" target="_blank">Auth New Tab</a>
+    <button onClick="removeIdentitiesFunction()">Remove Identities Function</button>
+    <button onclick="invalidateToken()">Invalidate Token</button>
+    <button onclick="openAuthIframe()">Open Auth iFrame</button>
+    <button onclick="closeAuthIframe()">Close Auth iFrame</button>
+  </div>
+
+  <div style="margin-top: 50px;">
+    <h4>Login / Logout Flow SPA User 2</h4>
+    <button onClick="pushIdentitiesFunction2()">Push Identities Function</button>
+    <button onclick="validateToken()">Validate Token</button>
+    <button onClick="callNewPage()">Call .newPage()</button>
+    <a href="./Auth.html" target="_blank">Auth New Tab</a>
+    <button onClick="removeIdentitiesFunction()">Remove Identities Function</button>
+    <button onclick="invalidateToken()">Invalidate Token</button>
+    <button onclick="openAuthIframe()">Open Auth iFrame</button>
+    <button onclick="closeAuthIframe()">Close Auth iFrame</button>
+  </div>
+
+  <div style="margin-top: 50px;">
+    <button onClick="getAuthStatus()">Get Auth Status</button>
+    <div id="embedded-specific"></div>
+  </div>
+
+  <div style="margin-top: 50px;">
+    <h4>Hidden Button</h4>
+    <button onClick="clickHiddenEngagement1()">Click Hidden Engagement 1</button>
+    <button onClick="clickHiddenEngagement2()">Click Hidden Engagement 2</button>
+    <div id="embedded-specific"></div>
+  </div>
+
+  <div id="hiddenEngagement1"></div>
+  <div id="hiddenEngagement2"></div>
+
+  <div id="auth-iframe">
+    <!-- <iframe height="500px" src="/Auth.html"></iframe> -->
+  </div>
+
+</body>
+
+</html>
